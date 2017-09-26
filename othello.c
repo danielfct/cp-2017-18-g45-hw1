@@ -11,15 +11,17 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#define RED   "\x1B[31m"
-#define BLU   "\x1B[34m"
-#define RESET "\x1B[0m"
+#define RED     "\x1B[31m"
+#define BLU     "\x1B[34m"
+#define RESET   "\x1B[0m"
+#define TOPLEFT "\x1B[0;0H"
+#define CLEAR   "\x1B[2J"
 
 #define E '-'
 #define R 'R'
 #define B 'B'
 
-#define TRUE 1
+#define TRUE  1
 #define FALSE 0
 
 typedef struct {
@@ -38,6 +40,7 @@ typedef struct {
 } move;
 
 char print_mode = 'n';
+int home_mode = 0;
 int board_size = 8;
 int delay = 0;
 int threads = 1;
@@ -104,7 +107,9 @@ int score(char color)
 void print_board() {
     if (print_mode == 's')
         return;
-    
+  if (home_mode) {
+    printf(TOPLEFT);
+  }
 	for (int i = 0; i < board_size; i++) {
 		for (int j = 0; j < board_size; j++) {
             const char c = board[i][j];
@@ -242,7 +247,7 @@ void get_move(move* m) {
     }
 }
 
-//PLEASE PARALELIZE THIS
+//PLEASE PARALELIZE THIS FUNCTION
 int make_move(char color) {
     move best_move, m;
     best_move.heuristic = 0;
@@ -271,10 +276,13 @@ void help(const char* prog_name) {
 
 void get_flags(int argc, char * argv[]) {
     char ch;
-    while ((ch = getopt(argc, argv, "scd:b:t:")) != -1) {
+    while ((ch = getopt(argc, argv, "schd:b:t:")) != -1) {
         switch (ch) {
             case 's':
                 print_mode = 's';
+                break;
+            case 'h':
+                home_mode = 1;
                 break;
             case 'c':
                 if (print_mode != 's')
@@ -318,7 +326,10 @@ int main (int argc, char * argv[]) {
 	init_board();
 	int cant_move_r = FALSE, cant_move_b = FALSE;
 	char turn = R;
-    
+
+    if (home_mode) {
+      printf(CLEAR);
+    }    
 	while (!cant_move_r && !cant_move_b) {
         print_board();
 		int cant_move = !make_move(turn);
