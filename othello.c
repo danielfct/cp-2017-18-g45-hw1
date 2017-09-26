@@ -15,7 +15,7 @@
 #define BLU   "\x1B[34m"
 #define RESET "\x1B[0m"
 
-#define E '0'
+#define E '-'
 #define R 'R'
 #define B 'B'
 
@@ -112,11 +112,11 @@ void print_board() {
                  printf("%c ",c);
             else if (print_mode == 'c') {
                 if (c == R)
-                    printf(RED "R " RESET);
+                    printf("%s%c %s", RED, R, RESET);
                 else if (c == B)
-                    printf(BLU "B " RESET);
+                    printf("%s%c %s", BLU, B, RESET);
                 else
-                    printf("0 ");
+                    printf("%s%c %s", "", E, "");
             }
 		}
 		printf("\n");
