@@ -40,7 +40,7 @@ typedef struct {
 } move;
 
 char print_mode = 'n';
-int home_mode = 0;
+int anim_mode = 0;
 int board_size = 8;
 int delay = 0;
 int threads = 1;
@@ -107,7 +107,7 @@ int score(char color)
 void print_board() {
     if (print_mode == 's')
         return;
-  if (home_mode) {
+  if (anim_mode) {
     printf(TOPLEFT);
   }
 	for (int i = 0; i < board_size; i++) {
@@ -249,11 +249,12 @@ void get_move(move* m) {
 
 //PLEASE PARALELIZE THIS FUNCTION
 int make_move(char color) {
+    int i, j;
     move best_move, m;
     best_move.heuristic = 0;
 	
-	for (int i = 0; i < board_size; i++) {
-		for (int j = 0; j < board_size; j++) {
+	for (i = 0; i < board_size; i++) {
+		for (j = 0; j < board_size; j++) {
             init_move(&m,i,j,color);
             get_move(&m);
 			if (m.heuristic > best_move.heuristic) {
@@ -270,19 +271,19 @@ int make_move(char color) {
 
 
 void help(const char* prog_name) {
-    printf ("Usage: %s [-s] [-c] [-d <MILI_SECA>] [-b <BOARD_ZISE>] [-t <N_THREADS>]\n", prog_name);
+    printf ("Usage: %s [-s] [-c] [-t] [-a] [-d <MILI_SECA>] [-b <BOARD_ZISE>] [-n <N_THREADS>]\n", prog_name);
     exit (1);
 }
 
 void get_flags(int argc, char * argv[]) {
     char ch;
-    while ((ch = getopt(argc, argv, "schd:b:t:")) != -1) {
+    while ((ch = getopt(argc, argv, "scatd:b:n:")) != -1) {
         switch (ch) {
             case 's':
                 print_mode = 's';
                 break;
-            case 'h':
-                home_mode = 1;
+            case 'a':
+                anim_mode = 1;
                 break;
             case 'c':
                 if (print_mode != 's')
@@ -302,32 +303,35 @@ void get_flags(int argc, char * argv[]) {
                     help(argv[0]);
                 }
                 break;
-            case 't':
+            case 'n':
                 threads = atoi(optarg);
                 if (threads < 1) {
                     printf("Minimum threads is 1.\n");
                     help(argv[0]);
                 }
                 break;
+            case 't':
+                // IMPLEMENT THIS OPTION
+                break;
             case '?':
             default:
                 help(argv[0]);
         }
     }
-    argc -= optind;
-    argv += optind;
-    
 }
 
 
 
 int main (int argc, char * argv[]) {
     get_flags(argc,argv);
+    // argc -= optind;
+    // argv += optind;
+    
 	init_board();
 	int cant_move_r = FALSE, cant_move_b = FALSE;
 	char turn = R;
 
-    if (home_mode) {
+    if (anim_mode) {
       printf(CLEAR);
     }    
 	while (!cant_move_r && !cant_move_b) {
