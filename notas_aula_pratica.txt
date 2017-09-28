@@ -1,0 +1,3 @@
+<cilk/cilk.h>
+
+__cilkrts_set_param("nworkers", nworkers);
