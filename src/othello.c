@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/time.h>
 #include <cilk/cilk.h>
 
 #define RED     "\x1B[31m"
@@ -40,13 +41,15 @@ typedef struct {
 
 enum print_mode { normal, silent, colorize, timer };
 
-enum print_mode print_mode  = normal;
+enum print_mode print_mode = normal;
 int anim_mode = 0;
 int board_size = 8;
 int delay = 0;
 int threads = 1;
 
 char** board;
+
+struct timeval start_time, end_time;
 
 
 void init_board() {
@@ -82,28 +85,50 @@ bool valid_move(int i, int j) {
 }
 
 char opponent(char turn) {
-	if (turn == R)
+	switch (turn) {
+	case R:
 		return B;
-	else if (turn == B) 
+	case B:
 		return R;
-	else 
-		return -1; //ERROR
+	default:
+		return -1;
+	}
 }
 
+// percorre o tabuleiro por linhas para calcular a pontuação do jogador da dada cor
 int score(char color) {
+	//	int res = 0;
+	//	for (int i = 0; i < board_size; i++) {
+	//		for (int j = 0; j < board_size; j++) {
+	//			if (board[i][j] == color)
+	//				res++;
+	//		}
+	//	}
+	//	return res;
+
+	// TODO: não era melhor percorrer o tabuleiro apenas 1x e calcular logo a pontuação de ambos os jogadores?
 	int res = 0;
-	for (int i = 0; i < board_size; i++) {
-		for (int j = 0; j < board_size; j++) {
-			if (board[i][j] == color) 
-				res++;
-		}
-	}
+	if (board[0:board_size][0:board_size] == color)
+		res++;
 	return res;
 }
 
+long timeElapsed(struct timeval start, struct timeval end) {
+	long secs_used = end.tv_sec - start.tv_sec; //avoid overflow by subtracting first
+	long micros_used = ((secs_used * 1000000) + end.tv_usec) - (start.tv_usec);
+
+	return micros_used;
+}
+
+void startTimer() {
+	gettimeofday(&start_time, NULL);
+}
+
+void stopTimer() {
+	gettimeofday(&end_time, NULL);
+}
+
 void print_board() {
-	if (print_mode == silent || print_mode == timer)
-		return;
 	if (anim_mode) {
 		printf(TOPLEFT);
 	}
@@ -129,9 +154,16 @@ void print_board() {
 }
 
 void print_scores() {
+	int r =	score(R);
+	int b =	score(B);
+	printf("score - red:%i blue:%i\n", r, b);
+}
+
+void print_timer() {
+	long elapsed = timeElapsed(start_time, end_time);
 	int w =	score(R);
 	int b =	score(B);
-	printf("score - red:%i blue:%i\n",w,b);
+	printf("board size:%d\t num threads:%d\t time(ms):%lu\t red:%i\t blue:%i\n", board_size, threads, elapsed, w, b);
 }
 
 void free_board() {
@@ -143,8 +175,16 @@ void free_board() {
 }
 
 void finish_game() {
-	print_board();
-	print_scores();
+	if (print_mode == timer) {
+		print_timer();
+	}
+	else {
+		if (print_mode != silent) {
+			print_board();
+		}
+		print_scores();
+	}
+
 	free_board();
 }
 
@@ -162,20 +202,20 @@ void flip_board(move* m) {
 	board[m->i][m->j] = m->color;
 	if (m->right)
 		flip_direction(m,1,0); //right
-		if (m->left)
-			flip_direction(m,-1,0); //left
-		if (m->up)
-			flip_direction(m,0,-1); //up
-		if (m->down)
-			flip_direction(m,0,1); //down
-		if (m->up_right)
-			flip_direction(m,1,-1); //up right
-		if (m->up_left)
-			flip_direction(m,-1,-1); //up left
-		if (m->down_right)
-			flip_direction(m,1,1); //down right
-		if (m->down_left)
-			flip_direction(m,-1,1); //down left
+	if (m->left)
+		flip_direction(m,-1,0); //left
+	if (m->up)
+		flip_direction(m,0,-1); //up
+	if (m->down)
+		flip_direction(m,0,1); //down
+	if (m->up_right)
+		flip_direction(m,1,-1); //up right
+	if (m->up_left)
+		flip_direction(m,-1,-1); //up left
+	if (m->down_right)
+		flip_direction(m,1,1); //down right
+	if (m->down_left)
+		flip_direction(m,-1,1); //down left
 }
 
 int get_direction_heuristic(move* m, char opp, int inc_i, int inc_j) {
@@ -319,19 +359,10 @@ void get_flags(int argc, char * argv[]) {
 	}
 }
 
-long timeElapsed(struct timeval start, struct timeval end) {
-	long secs_used = end.tv_sec - start.tv_sec; //avoid overflow by subtracting first
-	long micros_used = ((secs_used * 1000000) + end.tv_usec) - (start.tv_usec);
-
-	return micros_used;
-}
-
 
 int main (int argc, char * argv[]) {
 
-	struct timeval startTime, endTime;
-
-	gettimeofday(&startTime, NULL);
+	startTimer();
 
 	get_flags(argc, argv);
 	// argc -= optind;
@@ -345,7 +376,8 @@ int main (int argc, char * argv[]) {
 		printf(CLEAR);
 	}
 	while (!cant_move_r && !cant_move_b) {
-		print_board();
+		if (print_mode != silent && print_mode != timer)
+			print_board();
 		int cant_move = !make_move(turn);
 		if (cant_move) {
 			if (turn == R)
@@ -362,7 +394,7 @@ int main (int argc, char * argv[]) {
 		usleep(delay * 1000);
 	}
 
-	gettimeofday(&endTime, NULL);
+	stopTimer();
 
 	finish_game();
 }
