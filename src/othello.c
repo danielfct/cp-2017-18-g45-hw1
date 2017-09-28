@@ -120,13 +120,6 @@ long timeElapsed(struct timeval start, struct timeval end) {
 	return micros_used;
 }
 
-void startTimer() {
-	gettimeofday(&start_time, NULL);
-}
-
-void stopTimer() {
-	gettimeofday(&end_time, NULL);
-}
 
 void print_board() {
 	if (anim_mode) {
@@ -362,7 +355,7 @@ void get_flags(int argc, char * argv[]) {
 
 int main (int argc, char * argv[]) {
 
-	startTimer();
+    gettimeofday(&start_time, NULL);
 
 	get_flags(argc, argv);
 	// argc -= optind;
@@ -394,7 +387,7 @@ int main (int argc, char * argv[]) {
 		usleep(delay * 1000);
 	}
 
-	stopTimer();
+    gettimeofday(&end_time, NULL);
 
 	finish_game();
 }
