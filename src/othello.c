@@ -10,8 +10,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <stdbool.h>
+#include <stdbool.h> 
 #include <sys/time.h>
+#include <cilk/cilk_api.h> 
 #include <cilk/cilk.h>
 
 #define RED     "\x1B[31m"
@@ -54,9 +55,9 @@ struct timeval start_time, end_time;
 
 void init_board() {
 	board = malloc(board_size * sizeof(char*));
-	for (int i = 0; i < board_size; i++) {
+	for (int i = 0; i < board_size; i++) {// malloc vai ser executado em serie sempre
 		board[i] = malloc(board_size * sizeof(char));
-		for (int j = 0; j < board_size; j++)
+		for (int j = 0; j < board_size; j++) //como e apenas uma atribuicao nao vale a pena
 			board[i][j] = E;
 	}
 	board[board_size/2 - 1][board_size/2 - 1] = R;
@@ -95,7 +96,7 @@ char opponent(char turn) {
 	}
 }
 
-// percorre o tabuleiro por linhas para calcular a pontuação do jogador da dada cor
+// percorre o tabuleiro por linhas para calcular a pontuaï¿½ï¿½o do jogador da dada cor
 int score(char color) {
 	//	int res = 0;
 	//	for (int i = 0; i < board_size; i++) {
@@ -106,7 +107,7 @@ int score(char color) {
 	//	}
 	//	return res;
 
-	// TODO: não era melhor percorrer o tabuleiro apenas 1x e calcular logo a pontuação de ambos os jogadores?
+	// TODO: nï¿½o era melhor percorrer o tabuleiro apenas 1x e calcular logo a pontuaï¿½ï¿½o de ambos os jogadores?
 	int res = 0;
 	if (board[0:board_size][0:board_size] == color)
 		res++;
@@ -160,9 +161,8 @@ void print_timer() {
 }
 
 void free_board() {
-	// for (int i = 0; i < board_size; i++)
-	// 		free(board[i]);
-	// free(board);
+	// cilk_for (int i = 0; i < board_size; i++)
+	// 	free(board[i]);
 	free(board[0:board_size]);
 	free(board);
 }
@@ -279,27 +279,76 @@ void get_move(move* m) {
 	}
 }
 
+
+
+move getBestMoveInArray(move* m, int i, int j){
+	printf("%i	%i\n", i, j);	
+	if(i>j)
+		return m[i];
+
+	int mid = (i+j)/2;
+	move x, y;
+	x = /*cilk_spawn*/ getBestMoveInArray(m, i, mid);
+	y = getBestMoveInArray(m, mid+1, j);
+	//cilk_sync;
+
+	if(x.heuristic > y.heuristic)
+		return x;
+	return y;
+}
+
+move getBestMove(move** m){
+	move* _m = malloc(sizeof(move) * board_size); 
+	int i;
+	/*cilk_*/for(i = 0; i < board_size; i++){
+		_m[i] = getBestMoveInArray(m[i], 0, board_size-1);
+	}
+	
+	return getBestMoveInArray(_m, 0, board_size-1);
+}
+
+
+
 //PLEASE PARALELIZE THIS FUNCTION
 int make_move(char color) {
 	int i, j;
-	move best_move, m;
+	move best_move;
+	move** m;
 	best_move.heuristic = 0;
 
-	for (i = 0; i < board_size; i++) {
-		for (j = 0; j < board_size; j++) {
-			init_move(&m,i,j,color);
-			get_move(&m);
-			if (m.heuristic > best_move.heuristic) {
-				best_move = m;
-			}
+	//alocar o array de moves
+	m = malloc(board_size * sizeof(move));
+	for (int i = 0; i < board_size; i++) {// malloc vai ser executado em serie sempre
+		m[i] = malloc(board_size * sizeof(move));
+	}
+	
+	//obter todos os moves
+	cilk_for (i = 0; i < board_size; i++) {
+		cilk_for (j = 0; j < board_size; j++) {
+			init_move(&m[i][j],i,j,color);
+			get_move(&m[i][j]);
 		}
 	}
+
+	//ver qual o melhor move
+	best_move = getBestMove(m);
+	/* for (i = 0; i < board_size; i++){
+		for (j = 0; j < board_size; j++){
+	 		if(m[i][j].heuristic > best_move.heuristic) 
+				best_move = m[i][j];
+		}
+	} */
+
+	printf("Best move: %i\n",best_move.heuristic);
+
 	if (best_move.heuristic > 0) {
 		flip_board(&best_move);
 		return true;	//made a move
 	} else 
 		return false;	//no move to make
 }
+
+
 
 
 void help(const char* prog_name) {
@@ -341,6 +390,10 @@ void get_flags(int argc, char * argv[]) {
 				printf("Minimum threads is 1.\n");
 				help(argv[0]);
 			}
+
+			if (0!= __cilkrts_set_param("nworkers",optarg))
+			   printf("Failed to set worker count\n");
+			
 			break;
 		case 't':
 			print_mode = timer;
