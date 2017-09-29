@@ -282,15 +282,14 @@ void get_move(move* m) {
 
 
 move getBestMoveInArray(move* m, int i, int j){
-	printf("%i	%i\n", i, j);	
-	if(i>j)
+	if(i>=j)
 		return m[i];
 
 	int mid = (i+j)/2;
 	move x, y;
-	x = /*cilk_spawn*/ getBestMoveInArray(m, i, mid);
+	x = cilk_spawn getBestMoveInArray(m, i, mid);
 	y = getBestMoveInArray(m, mid+1, j);
-	//cilk_sync;
+	cilk_sync;
 
 	if(x.heuristic > y.heuristic)
 		return x;
@@ -300,7 +299,7 @@ move getBestMoveInArray(move* m, int i, int j){
 move getBestMove(move** m){
 	move* _m = malloc(sizeof(move) * board_size); 
 	int i;
-	/*cilk_*/for(i = 0; i < board_size; i++){
+	cilk_for(i = 0; i < board_size; i++){
 		_m[i] = getBestMoveInArray(m[i], 0, board_size-1);
 	}
 	
@@ -338,8 +337,6 @@ int make_move(char color) {
 				best_move = m[i][j];
 		}
 	} */
-
-	printf("Best move: %i\n",best_move.heuristic);
 
 	if (best_move.heuristic > 0) {
 		flip_board(&best_move);
