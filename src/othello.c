@@ -96,42 +96,40 @@ char opponent(char turn) {
 	}
 }
 
-// go through game board by lines to calculate points from player with given color
-int score(char color) {
-	//	int res = 0;
-	//	for (int i = 0; i < board_size; i++) {
-	//		for (int j = 0; j < board_size; j++) {
-	//			if (board[i][j] == color)
-	//				res++;
-	//		}
-	//	}
-	//	return res;
+// Go through game board by lines to calculate points for both players
+// pre-condition: game is finished
+void get_score(int* player_red, int* player_blue) {
 
-	// TODO: nao era melhor percorrer o tabuleiro apenas 1x e calcular logo a pontuacao de ambos os jogadores?
-	int res = 0;
-	if (board[0:board_size][0:board_size] == color)
-		res++;
-	return res;
+	int score_red = 0, score_blue = 0;
+	if (board[0:board_size][0:board_size] == R) {
+		score_red++;
+	} else {
+		score_blue++;
+	}
+
+	*player_red = score_red;
+	*player_blue = score_blue;
 }
 
-long timeElapsed(struct timeval start, struct timeval end) {
-	long secs_used = end.tv_sec - start.tv_sec; //avoid overflow by subtracting first
-	long millis_used = secs_used * 1000 + (end.tv_usec - start.tv_usec) / 1000;
+long calc_time_elapsed() {
+	long secs_used = end_time.tv_sec - start_time.tv_sec;
+	long millis_used = secs_used * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000;
 
 	return millis_used;
 }
 
 
 void print_board() {
-	if (anim_mode) {
+	if (print_mode == silent || print_mode == timer)
+		return;
+	if (anim_mode)
 		printf(TOPLEFT);
-	}
 	// estes 2 ciclos nao podem ser paralelizados porque ha possiveis prints diferentes em cada iteracao
 	for (int i = 0; i < board_size; i++) {
 		for (int j = 0; j < board_size; j++) {
 			const char c = board[i][j];
 			if (print_mode == normal)
-				printf("%c ",c);
+				printf("%c ", c);
 			else if (print_mode == colorize) {
 				if (c == R)
 					printf("%s%c %s", RED, R, RESET);
@@ -144,22 +142,23 @@ void print_board() {
 		printf("\n");
 	}
 	// este ciclo ja pode ser paralelizado porque o print é sempre o mesmo
-	cilk_for (int i = 0; i < 2*board_size; i++)
+	cilk_for (int i = 0; i < 2*board_size; i++) {
 		printf("=");
+	}
 	printf("\n");
 }
 
 void print_scores() {
-	int r =	score(R);
-	int b =	score(B);
+	int r, b;
+	get_score(&r, &b);
 	printf("score - red:%i blue:%i\n", r, b);
 }
 
 void print_timer() {
-	long elapsed = timeElapsed(start_time, end_time);
-	int r =	score(R);
-	int b =	score(B);
-	printf("board size:%d\t num threads:%d\t time(ms):%lu\t red:%i\t blue:%i\n", board_size, threads, elapsed, r, b);
+	long elapsed = calc_time_elapsed();
+	int r, b;
+	get_score(&r, &b);
+	printf("board size:%d\t num threads:%d\t time(ms):%lu\t red:%d\t blue:%d\n", board_size, threads, elapsed, r, b);
 }
 
 void free_board() {
@@ -188,12 +187,6 @@ void flip_direction(move* m, int inc_i, int inc_j) {
 		i += inc_i;
 		j += inc_j;
 	}
-
-	// TODO: apagar comentario
-	// nao é possivel paralelizar devido à condição de paragem
-	//	cilk_for (int i = m->i + inc_i, j = m->j + inc_j ; board[i][j] != m->color ; i += inc_i, j += inc_j) {
-	//		board[i][j] = m->color;
-	//	}
 }
 
 void flip_board(move* m) {
@@ -309,6 +302,28 @@ move getBestMove(move** m){
 }
 
 
+////PLEASE PARALELIZE THIS FUNCTION
+//int make_move(char color) {
+//    int i, j;
+//    move best_move, m;
+//    best_move.heuristic = 0;
+//
+//	for (i = 0; i < board_size; i++) {
+//		for (j = 0; j < board_size; j++) {
+//            init_move(&m,i,j,color);
+//            get_move(&m);
+//			if (m.heuristic > best_move.heuristic) {
+//				best_move = m;
+//			}
+//		}
+//	}
+//	if (best_move.heuristic > 0) {
+//		flip_board(&best_move);
+//		return true;	//made a move
+//	} else
+//		return false;	//no move to make
+//}
+
 
 //PLEASE PARALELIZE THIS FUNCTION
 int make_move(char color) {
@@ -335,7 +350,7 @@ int make_move(char color) {
 	best_move = getBestMove(m);
 	/* for (i = 0; i < board_size; i++){
 		for (j = 0; j < board_size; j++){
-	 		if(m[i][j].heuristic > best_move.heuristic) 
+	 		if(m[i][j].heuristic > best_move.heuristic)
 				best_move = m[i][j];
 		}
 	} */
@@ -343,7 +358,7 @@ int make_move(char color) {
 	if (best_move.heuristic > 0) {
 		flip_board(&best_move);
 		return true;	//made a move
-	} else 
+	} else
 		return false;	//no move to make
 }
 
@@ -355,7 +370,7 @@ void help(const char* prog_name) {
 	exit(1);
 }
 
-void get_flags(int argc, char * argv[]) {
+void set_prog_flags(int argc, char * argv[]) {
 	char ch;
 	while ((ch = getopt(argc, argv, "scatd:b:n:")) != -1) {
 		switch (ch) {
@@ -364,6 +379,7 @@ void get_flags(int argc, char * argv[]) {
 			break;
 		case 'a':
 			anim_mode = 1;
+			printf(CLEAR);
 			break;
 		case 'c':
 			if (print_mode != silent)
@@ -389,8 +405,10 @@ void get_flags(int argc, char * argv[]) {
 				printf("Minimum threads is 1.\n");
 				help(argv[0]);
 			}
-			if (__cilkrts_set_param("nworkers", optarg) != 0)
+			if (__cilkrts_set_param("nworkers", optarg) != 0) {
 				printf("Failed to set worker count.\n");
+				exit(1);
+			}
 			break;
 		case 't':
 			print_mode = timer;
@@ -404,40 +422,33 @@ void get_flags(int argc, char * argv[]) {
 
 
 int main (int argc, char * argv[]) {
-
+	// start timer
 	gettimeofday(&start_time, NULL);
 
-	get_flags(argc, argv);
-	// argc -= optind;
-	// argv += optind;
+	// set all program flags
+	set_prog_flags(argc, argv);
 
+	// initialize game board by allocating memory for board pointer variable and setting initial colors
 	init_board();
-	int cant_move_r = false, cant_move_b = false;
-	char turn = R;
 
-	if (anim_mode) {
-		printf(CLEAR);
-	}
-	while (!cant_move_r && !cant_move_b) {
-		if (print_mode != silent && print_mode != timer)
-			print_board();
-		int cant_move = !make_move(turn);
-		if (cant_move) {
-			if (turn == R)
-				cant_move_r = true;
-			else
-				cant_move_b = true;
+	// main game loop which makes alternate moves between player red and player blue
+	// the game stops when no more moves can be done for both players
+	// red player has the first move
+	bool can_move_r = true, can_move_b = true;
+	for (char turn = R; can_move_r && can_move_b; turn = opponent(turn)) {
+		print_board();
+		bool can_move = make_move(turn);
+		if (turn == R) {
+			can_move_r = can_move;
 		} else {
-			if (turn == R)
-				cant_move_r = false;
-			else
-				cant_move_b = false;
+			can_move_b = can_move;
 		}
-		turn = opponent(turn);
 		usleep(delay * 1000);
 	}
 
+	// stop timer
 	gettimeofday(&end_time, NULL);
 
+	// print game score and free all allocated memory
 	finish_game();
 }
