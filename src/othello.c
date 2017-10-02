@@ -96,7 +96,7 @@ char opponent(char turn) {
 	}
 }
 
-// percorre o tabuleiro por linhas para calcular a pontuaï¿½ï¿½o do jogador da dada cor
+// go through game board by lines to calculate points from player with given color
 int score(char color) {
 	//	int res = 0;
 	//	for (int i = 0; i < board_size; i++) {
@@ -107,7 +107,7 @@ int score(char color) {
 	//	}
 	//	return res;
 
-	// TODO: nï¿½o era melhor percorrer o tabuleiro apenas 1x e calcular logo a pontuaï¿½ï¿½o de ambos os jogadores?
+	// TODO: nao era melhor percorrer o tabuleiro apenas 1x e calcular logo a pontuacao de ambos os jogadores?
 	int res = 0;
 	if (board[0:board_size][0:board_size] == color)
 		res++;
@@ -116,9 +116,9 @@ int score(char color) {
 
 long timeElapsed(struct timeval start, struct timeval end) {
 	long secs_used = end.tv_sec - start.tv_sec; //avoid overflow by subtracting first
-	long micros_used = ((secs_used * 1000000) + end.tv_usec) - (start.tv_usec);
+	long millis_used = secs_used * 1000 + (end.tv_usec - start.tv_usec) / 1000;
 
-	return micros_used;
+	return millis_used;
 }
 
 
@@ -126,6 +126,7 @@ void print_board() {
 	if (anim_mode) {
 		printf(TOPLEFT);
 	}
+	// estes 2 ciclos nao podem ser paralelizados porque ha possiveis prints diferentes em cada iteracao
 	for (int i = 0; i < board_size; i++) {
 		for (int j = 0; j < board_size; j++) {
 			const char c = board[i][j];
@@ -142,7 +143,8 @@ void print_board() {
 		}
 		printf("\n");
 	}
-	for (int i = 0; i < 2*board_size; i++)
+	// este ciclo ja pode ser paralelizado porque o print é sempre o mesmo
+	cilk_for (int i = 0; i < 2*board_size; i++)
 		printf("=");
 	printf("\n");
 }
@@ -155,31 +157,28 @@ void print_scores() {
 
 void print_timer() {
 	long elapsed = timeElapsed(start_time, end_time);
-	int w =	score(R);
+	int r =	score(R);
 	int b =	score(B);
-	printf("board size:%d\t num threads:%d\t time(ms):%lu\t red:%i\t blue:%i\n", board_size, threads, elapsed, w, b);
+	printf("board size:%d\t num threads:%d\t time(ms):%lu\t red:%i\t blue:%i\n", board_size, threads, elapsed, r, b);
 }
 
 void free_board() {
-	// cilk_for (int i = 0; i < board_size; i++)
-	// 	free(board[i]);
 	free(board[0:board_size]);
 	free(board);
 }
 
 void finish_game() {
-	if (print_mode == timer) {
+	if (print_mode == timer)
 		print_timer();
-	}
 	else {
-		if (print_mode != silent) {
+		if (print_mode != silent)
 			print_board();
-		}
 		print_scores();
 	}
 
 	free_board();
 }
+
 
 void flip_direction(move* m, int inc_i, int inc_j) {
 	int i = m->i + inc_i;
@@ -189,6 +188,12 @@ void flip_direction(move* m, int inc_i, int inc_j) {
 		i += inc_i;
 		j += inc_j;
 	}
+
+	// TODO: apagar comentario
+	// nao é possivel paralelizar devido à condição de paragem
+	//	cilk_for (int i = m->i + inc_i, j = m->j + inc_j ; board[i][j] != m->color ; i += inc_i, j += inc_j) {
+	//		board[i][j] = m->color;
+	//	}
 }
 
 void flip_board(move* m) {
@@ -282,7 +287,7 @@ void get_move(move* m) {
 
 
 move getBestMoveInArray(move* m, int i, int j){
-	if(i>=j)
+	if (i >= j)
 		return m[i];
 
 	int mid = (i+j)/2;
@@ -291,18 +296,15 @@ move getBestMoveInArray(move* m, int i, int j){
 	y = getBestMoveInArray(m, mid+1, j);
 	cilk_sync;
 
-	if(x.heuristic > y.heuristic)
-		return x;
-	return y;
+	return x.heuristic > y.heuristic ? x : y;
 }
 
 move getBestMove(move** m){
 	move* _m = malloc(sizeof(move) * board_size); 
-	int i;
-	cilk_for(i = 0; i < board_size; i++){
+	cilk_for (int i = 0; i < board_size; i++){
 		_m[i] = getBestMoveInArray(m[i], 0, board_size-1);
 	}
-	
+
 	return getBestMoveInArray(_m, 0, board_size-1);
 }
 
@@ -320,7 +322,7 @@ int make_move(char color) {
 	for (int i = 0; i < board_size; i++) {// malloc vai ser executado em serie sempre
 		m[i] = malloc(board_size * sizeof(move));
 	}
-	
+
 	//obter todos os moves
 	cilk_for (i = 0; i < board_size; i++) {
 		cilk_for (j = 0; j < board_size; j++) {
@@ -350,7 +352,7 @@ int make_move(char color) {
 
 void help(const char* prog_name) {
 	printf ("Usage: %s [-s] [-c] [-t] [-a] [-d <MILI_SECA>] [-b <BOARD_ZISE>] [-n <N_THREADS>]\n", prog_name);
-	exit (1);
+	exit(1);
 }
 
 void get_flags(int argc, char * argv[]) {
@@ -387,10 +389,8 @@ void get_flags(int argc, char * argv[]) {
 				printf("Minimum threads is 1.\n");
 				help(argv[0]);
 			}
-
-			if (0!= __cilkrts_set_param("nworkers",optarg))
-			   printf("Failed to set worker count\n");
-			
+			if (__cilkrts_set_param("nworkers", optarg) != 0)
+				printf("Failed to set worker count.\n");
 			break;
 		case 't':
 			print_mode = timer;
@@ -405,7 +405,7 @@ void get_flags(int argc, char * argv[]) {
 
 int main (int argc, char * argv[]) {
 
-    gettimeofday(&start_time, NULL);
+	gettimeofday(&start_time, NULL);
 
 	get_flags(argc, argv);
 	// argc -= optind;
@@ -437,7 +437,7 @@ int main (int argc, char * argv[]) {
 		usleep(delay * 1000);
 	}
 
-    gettimeofday(&end_time, NULL);
+	gettimeofday(&end_time, NULL);
 
 	finish_game();
 }
