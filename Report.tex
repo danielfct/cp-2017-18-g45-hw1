@@ -30,7 +30,10 @@ What	is	the	general
 approach/strategy	you	 followed	 to	have	 the	program	executing	correctly	multithreaded?
 
 \section{Método}
-— A	longer	section	describing	your	solution.	How	did	you	split	the	work	
+De modo a distribuir o trabalho pelos threads existentes foram feitas várias alterações ao código inicial.\\ 
+Uma dessas alterações foi bastante simples, a obtenção de todos os movimentos possíveis. Isto deve-se à maneira como esta pesquisa está implementada, cada posição do tabuleiro é verificada se contém uma possivel jogada e qual a pontuação associada a esta. 
+Visto que apenas estamos a aceder a diferentes posições da matriz "board" para ver qual o estado da casa e, casa seja possivel executar essa jogada, a colocar esse novo "move" numa outra matriz "m", que contém todos as jogadas possiveis, não irá existir qualquer colisão durante a execução das threads. Como tal, podemos simplesmente utilizar o cilk\_for para paralelizar este troço de código. 
+\\\\ A	longer	section	describing	your	solution.	How	did	you	split	the	work	
 among	 threads?	What	parallel	pattern(s)	did	you	use?	 What	problems	did	you	
 identify	 when	 parallelizing	 the	 given	 code?	 	 How	 did	 you	 address/solve	 them?	
 IMPORTANT:	 by reading	 this	 section	 it	must	 be	 clear	 how	 your	 solution	works,	

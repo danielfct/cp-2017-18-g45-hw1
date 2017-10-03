@@ -382,7 +382,7 @@ int make_move(char color)
 
 void help(const char *prog_name)
 {
-	printf("Usage: %s [-s] [-c] [-t] [-a] [-d <MILI_SECA>] [-b <BOARD_ZISE>] [-n <N_THREADS>]\n", prog_name);
+	printf("Usage: %s [-s] [-c] [-t] [-a] [-d <MILI_SECS>] [-b <BOARD_SIZE>] [-n <N_THREADS>]\n", prog_name);
 	exit(1);
 }
 
