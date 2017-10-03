@@ -3,3 +3,5 @@
 othello
 *.o
 *.obj
+.settings
+Debug
