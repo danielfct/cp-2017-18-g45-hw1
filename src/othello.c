@@ -141,7 +141,7 @@ void print_board()
 		return;
 	if (anim_mode)
 		printf(TOPLEFT);
-	// estes 2 ciclos nao podem ser paralelizados porque ha possiveis prints diferentes em cada iteracao
+
 	for (int i = 0; i < board_size; i++)
 	{
 		for (int j = 0; j < board_size; j++)
@@ -161,8 +161,8 @@ void print_board()
 		}
 		printf("\n");
 	}
-	// este ciclo ja pode ser paralelizado porque o print � sempre o mesmo
-	cilk_for(int i = 0; i < 2 * board_size; i++)
+
+	for (int i = 0; i < 2 * board_size; i++)
 	{
 		printf("=");
 	}
@@ -316,6 +316,7 @@ void get_move(move *m)
 	}
 }
 
+//finds the best move inside an array of moves
 move getBestMoveInArray(move *m, int i, int j)
 {
 	if (i >= j)
@@ -330,6 +331,7 @@ move getBestMoveInArray(move *m, int i, int j)
 	return x.heuristic > y.heuristic ? x : y;
 }
 
+//finds the best move inside an matrix of moves by finding the best on each array and comparing them
 move getBestMove(move **m)
 {
 	move *_m = malloc(sizeof(move) * board_size);
@@ -340,28 +342,6 @@ move getBestMove(move **m)
 
 	return getBestMoveInArray(_m, 0, board_size - 1);
 }
-
-////PLEASE PARALELIZE THIS FUNCTION
-//int make_move(char color) {
-//    int i, j;
-//    move best_move, m;
-//    best_move.heuristic = 0;
-//
-//	for (i = 0; i < board_size; i++) {
-//		for (j = 0; j < board_size; j++) {
-//            init_move(&m,i,j,color);
-//            get_move(&m);
-//			if (m.heuristic > best_move.heuristic) {
-//				best_move = m;
-//			}
-//		}
-//	}
-//	if (best_move.heuristic > 0) {
-//		flip_board(&best_move);
-//		return true;	//made a move
-//	} else
-//		return false;	//no move to make
-//}
 
 //PLEASE PARALELIZE THIS FUNCTION
 int make_move(char color)
@@ -390,12 +370,6 @@ int make_move(char color)
 
 	//ver qual o melhor move
 	best_move = getBestMove(m);
-	/* for (i = 0; i < board_size; i++){
-		for (j = 0; j < board_size; j++){
-	 		if(m[i][j].heuristic > best_move.heuristic)
-				best_move = m[i][j];
-		}
-	} */
 
 	if (best_move.heuristic > 0)
 	{
