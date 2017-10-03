@@ -10,22 +10,23 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <stdbool.h> 
+#include <stdbool.h>
 #include <sys/time.h>
-#include <cilk/cilk_api.h> 
+#include <cilk/cilk_api.h>
 #include <cilk/cilk.h>
 
-#define RED     "\x1B[31m"
-#define BLU     "\x1B[34m"
-#define RESET   "\x1B[0m"
+#define RED "\x1B[31m"
+#define BLU "\x1B[34m"
+#define RESET "\x1B[0m"
 #define TOPLEFT "\x1B[0;0H"
-#define CLEAR   "\x1B[2J"
+#define CLEAR "\x1B[2J"
 
 #define E '-'
 #define R 'R'
 #define B 'B'
 
-typedef struct {
+typedef struct
+{
 	int i;
 	int j;
 	char color;
@@ -40,33 +41,41 @@ typedef struct {
 	int heuristic;
 } move;
 
-enum print_mode { normal, silent, colorize, timer };
+enum print_mode
+{
+	normal,
+	silent,
+	colorize,
+	timer
+};
 
 enum print_mode print_mode = normal;
 int anim_mode = 0;
 int board_size = 8;
 int delay = 0;
-int threads = 1;
+char *threads = "1";
 
-char** board;
+char **board;
 
 struct timeval start_time, end_time;
 
-
-void init_board() {
-	board = malloc(board_size * sizeof(char*));
-	for (int i = 0; i < board_size; i++) {// malloc vai ser executado em serie sempre
+void init_board()
+{
+	board = malloc(board_size * sizeof(char *));
+	for (int i = 0; i < board_size; i++)
+	{ // malloc vai ser executado em serie sempre
 		board[i] = malloc(board_size * sizeof(char));
 		for (int j = 0; j < board_size; j++) //como e apenas uma atribuicao nao vale a pena
 			board[i][j] = E;
 	}
-	board[board_size/2 - 1][board_size/2 - 1] = R;
-	board[board_size/2][board_size/2 - 1] = B;
-	board[board_size/2 - 1][board_size/2] = B;
-	board[board_size/2][board_size/2] = R;
+	board[board_size / 2 - 1][board_size / 2 - 1] = R;
+	board[board_size / 2][board_size / 2 - 1] = B;
+	board[board_size / 2 - 1][board_size / 2] = B;
+	board[board_size / 2][board_size / 2] = R;
 }
 
-void init_move(move* m, int i, int j, char color) {
+void init_move(move *m, int i, int j, char color)
+{
 	m->i = i;
 	m->j = j;
 	m->color = color;
@@ -81,12 +90,15 @@ void init_move(move* m, int i, int j, char color) {
 	m->heuristic = 0;
 }
 
-bool valid_move(int i, int j) {
+bool valid_move(int i, int j)
+{
 	return i >= 0 && i < board_size && j >= 0 && j < board_size;
 }
 
-char opponent(char turn) {
-	switch (turn) {
+char opponent(char turn)
+{
+	switch (turn)
+	{
 	case R:
 		return B;
 	case B:
@@ -98,12 +110,16 @@ char opponent(char turn) {
 
 // Go through game board by lines to calculate points for both players
 // pre-condition: game is finished
-void get_score(int* player_red, int* player_blue) {
+void get_score(int *player_red, int *player_blue)
+{
 
 	int score_red = 0, score_blue = 0;
-	if (board[0:board_size][0:board_size] == R) {
+	if (board [0:board_size] [0:board_size] == R)
+	{
 		score_red++;
-	} else {
+	}
+	else
+	{
 		score_blue++;
 	}
 
@@ -111,26 +127,30 @@ void get_score(int* player_red, int* player_blue) {
 	*player_blue = score_blue;
 }
 
-long calc_time_elapsed() {
+long calc_time_elapsed()
+{
 	long secs_used = end_time.tv_sec - start_time.tv_sec;
 	long millis_used = secs_used * 1000 + (end_time.tv_usec - start_time.tv_usec) / 1000;
 
 	return millis_used;
 }
 
-
-void print_board() {
+void print_board()
+{
 	if (print_mode == silent || print_mode == timer)
 		return;
 	if (anim_mode)
 		printf(TOPLEFT);
 	// estes 2 ciclos nao podem ser paralelizados porque ha possiveis prints diferentes em cada iteracao
-	for (int i = 0; i < board_size; i++) {
-		for (int j = 0; j < board_size; j++) {
+	for (int i = 0; i < board_size; i++)
+	{
+		for (int j = 0; j < board_size; j++)
+		{
 			const char c = board[i][j];
 			if (print_mode == normal)
 				printf("%c ", c);
-			else if (print_mode == colorize) {
+			else if (print_mode == colorize)
+			{
 				if (c == R)
 					printf("%s%c %s", RED, R, RESET);
 				else if (c == B)
@@ -141,35 +161,41 @@ void print_board() {
 		}
 		printf("\n");
 	}
-	// este ciclo ja pode ser paralelizado porque o print é sempre o mesmo
-	cilk_for (int i = 0; i < 2*board_size; i++) {
+	// este ciclo ja pode ser paralelizado porque o print ï¿½ sempre o mesmo
+	cilk_for(int i = 0; i < 2 * board_size; i++)
+	{
 		printf("=");
 	}
 	printf("\n");
 }
 
-void print_scores() {
+void print_scores()
+{
 	int r, b;
 	get_score(&r, &b);
 	printf("score - red:%i blue:%i\n", r, b);
 }
 
-void print_timer() {
+void print_timer()
+{
 	long elapsed = calc_time_elapsed();
 	int r, b;
 	get_score(&r, &b);
-	printf("board size:%d\t num threads:%d\t time(ms):%lu\t red:%d\t blue:%d\n", board_size, threads, elapsed, r, b);
+	printf("board size:%d\t num threads:%s\t time(ms):%lu\t red:%d\t blue:%d\n", board_size, threads, elapsed, r, b);
 }
 
-void free_board() {
-	free(board[0:board_size]);
+void free_board()
+{
+	free(board [0:board_size]);
 	free(board);
 }
 
-void finish_game() {
+void finish_game()
+{
 	if (print_mode == timer)
 		print_timer();
-	else {
+	else
+	{
 		if (print_mode != silent)
 			print_board();
 		print_scores();
@@ -178,44 +204,48 @@ void finish_game() {
 	free_board();
 }
 
-
-void flip_direction(move* m, int inc_i, int inc_j) {
+void flip_direction(move *m, int inc_i, int inc_j)
+{
 	int i = m->i + inc_i;
 	int j = m->j + inc_j;
-	while (board[i][j] != m->color) {
+	while (board[i][j] != m->color)
+	{
 		board[i][j] = m->color;
 		i += inc_i;
 		j += inc_j;
 	}
 }
 
-void flip_board(move* m) {
+void flip_board(move *m)
+{
 	board[m->i][m->j] = m->color;
 	if (m->right)
-		flip_direction(m,1,0); //right
+		flip_direction(m, 1, 0); //right
 	if (m->left)
-		flip_direction(m,-1,0); //left
+		flip_direction(m, -1, 0); //left
 	if (m->up)
-		flip_direction(m,0,-1); //up
+		flip_direction(m, 0, -1); //up
 	if (m->down)
-		flip_direction(m,0,1); //down
+		flip_direction(m, 0, 1); //down
 	if (m->up_right)
-		flip_direction(m,1,-1); //up right
+		flip_direction(m, 1, -1); //up right
 	if (m->up_left)
-		flip_direction(m,-1,-1); //up left
+		flip_direction(m, -1, -1); //up left
 	if (m->down_right)
-		flip_direction(m,1,1); //down right
+		flip_direction(m, 1, 1); //down right
 	if (m->down_left)
-		flip_direction(m,-1,1); //down left
+		flip_direction(m, -1, 1); //down left
 }
 
-int get_direction_heuristic(move* m, char opp, int inc_i, int inc_j) {
+int get_direction_heuristic(move *m, char opp, int inc_i, int inc_j)
+{
 	int heuristic = 0;
 	int i = m->i + inc_i;
 	int j = m->j + inc_j;
 	char curr = opp;
 
-	while (valid_move(i,j)) {
+	while (valid_move(i, j))
+	{
 		curr = board[i][j];
 		if (curr != opp)
 			break;
@@ -229,78 +259,87 @@ int get_direction_heuristic(move* m, char opp, int inc_i, int inc_j) {
 		return 0;
 }
 
-void get_move(move* m) {
+void get_move(move *m)
+{
 	if (board[m->i][m->j] != E)
 		return;
 	char opp = opponent(m->color);
 	int heuristic;
 
 	heuristic = get_direction_heuristic(m, opp, 1, 0); //right
-	if (heuristic > 0) {
+	if (heuristic > 0)
+	{
 		m->heuristic += heuristic;
 		m->right = 1;
 	}
 	heuristic = get_direction_heuristic(m, opp, -1, 0); //left
-	if (heuristic > 0) {
+	if (heuristic > 0)
+	{
 		m->heuristic += heuristic;
 		m->left = 1;
 	}
 	heuristic = get_direction_heuristic(m, opp, 0, -1); //up
-	if (heuristic > 0) {
+	if (heuristic > 0)
+	{
 		m->heuristic += heuristic;
 		m->up = 1;
 	}
 	heuristic = get_direction_heuristic(m, opp, 0, 1); //down
-	if (heuristic > 0) {
+	if (heuristic > 0)
+	{
 		m->heuristic += heuristic;
 		m->down = 1;
 	}
 	heuristic = get_direction_heuristic(m, opp, 1, -1); //up right
-	if (heuristic > 0) {
+	if (heuristic > 0)
+	{
 		m->heuristic += heuristic;
 		m->up_right = 1;
 	}
 	heuristic = get_direction_heuristic(m, opp, -1, -1); //up left
-	if (heuristic > 0) {
+	if (heuristic > 0)
+	{
 		m->heuristic += heuristic;
 		m->up_left = 1;
 	}
 	heuristic = get_direction_heuristic(m, opp, 1, 1); //down right
-	if (heuristic > 0) {
+	if (heuristic > 0)
+	{
 		m->heuristic += heuristic;
 		m->down_right = 1;
 	}
 	heuristic = get_direction_heuristic(m, opp, -1, 1); //down left
-	if (heuristic > 0) {
+	if (heuristic > 0)
+	{
 		m->heuristic += heuristic;
 		m->down_left = 1;
 	}
 }
 
-
-
-move getBestMoveInArray(move* m, int i, int j){
+move getBestMoveInArray(move *m, int i, int j)
+{
 	if (i >= j)
 		return m[i];
 
-	int mid = (i+j)/2;
+	int mid = (i + j) / 2;
 	move x, y;
 	x = cilk_spawn getBestMoveInArray(m, i, mid);
-	y = getBestMoveInArray(m, mid+1, j);
+	y = getBestMoveInArray(m, mid + 1, j);
 	cilk_sync;
 
 	return x.heuristic > y.heuristic ? x : y;
 }
 
-move getBestMove(move** m){
-	move* _m = malloc(sizeof(move) * board_size); 
-	cilk_for (int i = 0; i < board_size; i++){
-		_m[i] = getBestMoveInArray(m[i], 0, board_size-1);
+move getBestMove(move **m)
+{
+	move *_m = malloc(sizeof(move) * board_size);
+	cilk_for(int i = 0; i < board_size; i++)
+	{
+		_m[i] = getBestMoveInArray(m[i], 0, board_size - 1);
 	}
 
-	return getBestMoveInArray(_m, 0, board_size-1);
+	return getBestMoveInArray(_m, 0, board_size - 1);
 }
-
 
 ////PLEASE PARALELIZE THIS FUNCTION
 //int make_move(char color) {
@@ -324,24 +363,27 @@ move getBestMove(move** m){
 //		return false;	//no move to make
 //}
 
-
 //PLEASE PARALELIZE THIS FUNCTION
-int make_move(char color) {
+int make_move(char color)
+{
 	int i, j;
 	move best_move;
-	move** m;
+	move **m;
 	best_move.heuristic = 0;
 
-	//alocar o array de moves
+	//alocar o array de moves inicializar antes, ao mesmo tempo que o board?
 	m = malloc(board_size * sizeof(move));
-	for (int i = 0; i < board_size; i++) {// malloc vai ser executado em serie sempre
+	for (int i = 0; i < board_size; i++)
+	{ // malloc vai ser executado em serie sempre
 		m[i] = malloc(board_size * sizeof(move));
 	}
 
 	//obter todos os moves
-	cilk_for (i = 0; i < board_size; i++) {
-		cilk_for (j = 0; j < board_size; j++) {
-			init_move(&m[i][j],i,j,color);
+	cilk_for(i = 0; i < board_size; i++)
+	{
+		cilk_for(j = 0; j < board_size; j++)
+		{
+			init_move(&m[i][j], i, j, color);
 			get_move(&m[i][j]);
 		}
 	}
@@ -355,25 +397,28 @@ int make_move(char color) {
 		}
 	} */
 
-	if (best_move.heuristic > 0) {
+	if (best_move.heuristic > 0)
+	{
 		flip_board(&best_move);
-		return true;	//made a move
-	} else
-		return false;	//no move to make
+		return true; //made a move
+	}
+	else
+		return false; //no move to make
 }
 
-
-
-
-void help(const char* prog_name) {
-	printf ("Usage: %s [-s] [-c] [-t] [-a] [-d <MILI_SECA>] [-b <BOARD_ZISE>] [-n <N_THREADS>]\n", prog_name);
+void help(const char *prog_name)
+{
+	printf("Usage: %s [-s] [-c] [-t] [-a] [-d <MILI_SECA>] [-b <BOARD_ZISE>] [-n <N_THREADS>]\n", prog_name);
 	exit(1);
 }
 
-void set_prog_flags(int argc, char * argv[]) {
+void set_prog_flags(int argc, char *argv[])
+{
 	char ch;
-	while ((ch = getopt(argc, argv, "scatd:b:n:")) != -1) {
-		switch (ch) {
+	while ((ch = getopt(argc, argv, "scatd:b:n:")) != -1)
+	{
+		switch (ch)
+		{
 		case 's':
 			print_mode = silent;
 			break;
@@ -387,28 +432,28 @@ void set_prog_flags(int argc, char * argv[]) {
 			break;
 		case 'd':
 			delay = atoi(optarg);
-			if (delay < 0){
+			if (delay < 0)
+			{
 				printf("Minimum delay is 0.\n");
 				help(argv[0]);
 			}
 			break;
 		case 'b':
 			board_size = atoi(optarg);
-			if (board_size < 4) {
+			if (board_size < 4)
+			{
 				printf("Minimum board size is 4.\n");
 				help(argv[0]);
 			}
 			break;
 		case 'n':
-			threads = atoi(optarg);
-			if (threads < 1) {
+			threads = optarg;
+			if (atoi(threads) < 1)
+			{
 				printf("Minimum threads is 1.\n");
 				help(argv[0]);
 			}
-			if (__cilkrts_set_param("nworkers", optarg) != 0) {
-				printf("Failed to set worker count.\n");
-				exit(1);
-			}
+
 			break;
 		case 't':
 			print_mode = timer;
@@ -420,13 +465,20 @@ void set_prog_flags(int argc, char * argv[]) {
 	}
 }
 
-
-int main (int argc, char * argv[]) {
+int main(int argc, char *argv[])
+{
 	// start timer
 	gettimeofday(&start_time, NULL);
 
 	// set all program flags
 	set_prog_flags(argc, argv);
+
+	//set number of threads
+	if (__cilkrts_set_param("nworkers", threads) != 0)
+	{
+		printf("Failed to set worker count.\n");
+		exit(1);
+	}
 
 	// initialize game board by allocating memory for board pointer variable and setting initial colors
 	init_board();
@@ -435,12 +487,16 @@ int main (int argc, char * argv[]) {
 	// the game stops when no more moves can be done for both players
 	// red player has the first move
 	bool can_move_r = true, can_move_b = true;
-	for (char turn = R; can_move_r && can_move_b; turn = opponent(turn)) {
+	for (char turn = R; can_move_r && can_move_b; turn = opponent(turn))
+	{
 		print_board();
 		bool can_move = make_move(turn);
-		if (turn == R) {
+		if (turn == R)
+		{
 			can_move_r = can_move;
-		} else {
+		}
+		else
+		{
 			can_move_b = can_move;
 		}
 		usleep(delay * 1000);
