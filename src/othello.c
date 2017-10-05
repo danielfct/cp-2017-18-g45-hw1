@@ -346,7 +346,6 @@ move getBestMove(move **m)
 //PLEASE PARALELIZE THIS FUNCTION
 int make_move(char color)
 {
-	int i, j;
 	move best_move;
 	move **m;
 	best_move.heuristic = 0;
@@ -359,9 +358,9 @@ int make_move(char color)
 	}
 
 	//obter todos os moves
-	cilk_for(i = 0; i < board_size; i++)
+	cilk_for(int i = 0; i < board_size; i++)
 	{
-		cilk_for(j = 0; j < board_size; j++)
+		for(int j = 0; j < board_size; j++)
 		{
 			init_move(&m[i][j], i, j, color);
 			get_move(&m[i][j]);
