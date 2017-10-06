@@ -317,30 +317,26 @@ void get_move(move *m)
 }
 
 //finds the best move inside an array of moves
-move getBestMoveInArray(move *m, int i, int j)
+move getBestMoveInArray(move *m)
 {
-	if (i >= j)
-		return m[i];
-
-	int mid = (i + j) / 2;
-	move x, y;
-	x = cilk_spawn getBestMoveInArray(m, i, mid);
-	y = getBestMoveInArray(m, mid + 1, j);
-	cilk_sync;
-
-	return x.heuristic > y.heuristic ? x : y;
-}
-
+    move bestMove = m[0];
+    int i;
+    for(i = 1; i<board_size; i++){
+        if(m[i].heuristic>bestMove.heuristic)
+            bestMove = m[i];
+    }
+    return bestMove;    
+}    
 //finds the best move inside an matrix of moves by finding the best on each array and comparing them
 move getBestMove(move **m)
 {
 	move *_m = malloc(sizeof(move) * board_size);
 	cilk_for(int i = 0; i < board_size; i++)
 	{
-		_m[i] = getBestMoveInArray(m[i], 0, board_size - 1);
+		_m[i] = getBestMoveInArray(m[i]);
 	}
 
-	return getBestMoveInArray(_m, 0, board_size - 1);
+	return getBestMoveInArray(_m);
 }
 
 //PLEASE PARALELIZE THIS FUNCTION
