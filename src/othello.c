@@ -114,15 +114,15 @@ void get_score(int *player_red, int *player_blue)
 {
 
 	int score_red = 0, score_blue = 0;
-	if (board [0:board_size] [0:board_size] == R)
-	{
-		score_red++;
-	}
-	else
-	{
-		score_blue++;
-	}
-
+	int i, j;
+	for (i = 0; i < board_size; i++)
+		for (j = 0; j < board_size; j++)
+		{
+			if (board[i][j] == R)
+				score_red++;
+			else
+				score_blue++;
+		}
 	*player_red = score_red;
 	*player_blue = score_blue;
 }
@@ -186,7 +186,9 @@ void print_timer()
 
 void free_board()
 {
-	free(board [0:board_size]);
+	int i;
+	for (i = 0; i < board_size; i++)
+		free(board[i]);
 	free(board);
 }
 
@@ -319,14 +321,15 @@ void get_move(move *m)
 //finds the best move inside an array of moves
 move getBestMoveInArray(move *m)
 {
-    move bestMove = m[0];
-    int i;
-    for(i = 1; i<board_size; i++){
-        if(m[i].heuristic>bestMove.heuristic)
-            bestMove = m[i];
-    }
-    return bestMove;    
-}    
+	move bestMove = m[0];
+	int i;
+	for (i = 1; i < board_size; i++)
+	{
+		if (m[i].heuristic > bestMove.heuristic)
+			bestMove = m[i];
+	}
+	return bestMove;
+}
 //finds the best move inside an matrix of moves by finding the best on each array and comparing them
 move getBestMove(move **m)
 {
@@ -356,7 +359,7 @@ int make_move(char color)
 	//obter todos os moves
 	cilk_for(int i = 0; i < board_size; i++)
 	{
-		for(int j = 0; j < board_size; j++)
+		for (int j = 0; j < board_size; j++)
 		{
 			init_move(&m[i][j], i, j, color);
 			get_move(&m[i][j]);
