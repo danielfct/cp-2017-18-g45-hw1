@@ -5,8 +5,8 @@ __cilkrts_set_param("nworkers", nworkers);
 
 // testar 
 
-for n in 1 2 4 8 12 14 16 32; do
-for j in 10 50 100; do
+for n in 1 2 4 8 12 16 32; do
+for j in 10 50 75 100; do
 for i in 1 2 3 4 5; do
 ./othello -b $j -t -n $n;
 done;

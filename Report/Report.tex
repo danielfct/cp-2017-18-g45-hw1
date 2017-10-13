@@ -2,6 +2,7 @@
 
 %% Language and font encodings
 \usepackage[english]{babel}
+\usepackage{graphicx}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 
@@ -23,6 +24,7 @@ Foi nos possível realizar esta paralelização o que, se o  tamanho do tabuleir
 \end{abstract}
 
 \section{Introdução}
+
 
 Foi-nos fornecido um programa em C que simula um jogo de reversi, estando este implementado iterativamente. O problema consiste em tentar paralelizar esse código, fazendo as alterações necessárias para esse efeito. Foram também feitas algumas otimizações de modo a que o programa corra o mais rápidamente possivel, sem sacrificar a estabilidade do mesmo.\\
 Para poder efetuar estas mudanças é preciso saber quais são as partes do código que podem ser paralelizadas, ou seja, partes que nao entrem em conflito seja ao alterar a mesma posição de memória ao mesmo tempo ou mesmo manter a ordem dos métodos, no caso em que esta seja necessária.
@@ -49,9 +51,18 @@ Isto para um programa implementado sequencialmente talvez seria o suficiente par
 TODO FAZER O TESTE SE TIVER TEMPO
 
 \section{Avaliação}
-Como se pode verificar no gráfico da figura 1, houve um aumento de velocidade na execução do código em cerca de 3x. 
-É um máximo esperado, visto que existe uma parte sequencial do programa que não pode ser paralelizada, sendo que este troço corresponde a uma grande parte do runtime.
-Como tal correr o programa utilizando mais processadores que 8/12 TODO não iria trazer grandes benefícios na velocidade.
+\includegraphics{bs50.JPG}
+\includegraphics{bs75.JPG}
+\includegraphics{bs100.JPG}
+
+Os dados referentes às imagens acima foram obtidos através de vários testes na máquina de 16 cores, sendo que foi utilizada a média desses valores para simplificar a visualização dos mesmos tal como eliminar qualquer ruído durante a execução dos testes, possivelmente criado por outros alunos a realizar os seus testes.
+
+Como se pode ver nos gráficos apresentados acima houve um aumento de velocidade bastante substancial na execução do código utilizando apenas 1 core contra utilizando múltiplos cores, tal como esperado, visto que foi feita a paralelização do programa tendo em conta o tempo de execução do mesmo.
+
+
+Podemos também verificar que os maiores ganhos ocorrem utilizando 12 cores, com um tamanho de tabuleiro menos grande. Isto deve-se ao facto de que a quantidade de código executada por cada um dos processadores nesses jogos mais pequenos não justifica a criação de mais threads, levando mesmo a algum decréscimo de velocidade. 
+
+O ganho de velocidade depende do tamanho do tabuleiro inicial sendo que quanto maior este for, mais eficiente será a paralelização. Isto pode ser explicado, como o ponto anterior, pela quantidade de carga que cada processador irá tratar. Outro fator que contribui para esse facto será que ao aumentar o tamanho do board, a parte paralelizada do programa irá crescer a uma velocidade superior superior ao troço de código iterativo ou seja, quanto maior o board, menos impacto terá a parte nao paralelizada no tempo que o programa demora a executar, levando assim a mais ganhos.
 
 \section{Conclusões}
 Com este projeto foi concluido que paralelizar um programa é mais complicado que simplesmente criar um thread para tudo. Isto deve-se ao facto de que é necessário verificar se irá existir algum aumento de velocidade ou mesmo se haverá algum problema, nomeadamente "race conditions", a diferentes processos tentarem aceder a mesma posição de memória e o programa crashar ou mesmo porque pode ser necessário manter a ordem de execução do programa. 
