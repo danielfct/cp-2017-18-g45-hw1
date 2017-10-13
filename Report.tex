@@ -25,9 +25,7 @@ Foi nos possível realizar esta paralelização o que, se o  tamanho do tabuleir
 \section{Introdução}
 
 Foi-nos fornecido um programa em C que simula um jogo de reversi, estando este implementado iterativamente. O problema consiste em tentar paralelizar esse código, fazendo as alterações necessárias para esse efeito. Foram também feitas algumas otimizações de modo a que o programa corra o mais rápidamente possivel, sem sacrificar a estabilidade do mesmo.\\
-Para poder efetuar estas mudanças é preciso saber quais são as partes do código que podem ser paralelizadas, ou seja, partes que nao entrem em conflito seja ao alterar a mesma posição de memória ao mesmo tempo ou mesmo manter a ordem dos métodos, no caso em que esta seja necessária.\\\\
-What	is	the	general	
-approach/strategy	you	 followed	 to	have	 the	program	executing	correctly	multithreaded?
+Para poder efetuar estas mudanças é preciso saber quais são as partes do código que podem ser paralelizadas, ou seja, partes que nao entrem em conflito seja ao alterar a mesma posição de memória ao mesmo tempo ou mesmo manter a ordem dos métodos, no caso em que esta seja necessária.
 
 \section{Método}
 A função mais necessitada de paralelização é a make\textunderscore move visto que é o local onde ocorre a grande parte do tempo de execução do programa, onde são encontrados todos os movimentos possiveis num dado momento e de seguida verificar qual destes o que o jogador deveria escolher para maximizar a sua pontuação. Para paralelizar a obtenção de todos os moves possiveis o trabalho foi dividido por linhas, ou seja, utilizamos um cilk\textunderscore for para cada linha da matriz do tabuleiro de modo a verificar se seria permitida uma jogada nessa mesma posição. Este trabalho poderia ser dividido ainda mais, criando um job para cada posição do tabuleiro no entanto, depois da realização de alguns testes, verificámos que esse tipo de distribuição iria abrandar a execução do programa, visto que a carga de trabalho dentro de cada um seria mínima comparada com a carga necessária para criar um número de jobs tão elevado.
@@ -51,8 +49,12 @@ Isto para um programa implementado sequencialmente talvez seria o suficiente par
 TODO FAZER O TESTE SE TIVER TEMPO
 
 \section{Avaliação}
+Como se pode verificar no gráfico da figura 1, houve um aumento de velocidade na execução do código em cerca de 3x. 
+É um máximo esperado, visto que existe uma parte sequencial do programa que não pode ser paralelizada, sendo que este troço corresponde a uma grande parte do runtime.
+Como tal correr o programa utilizando mais processadores que 8/12 TODO não iria trazer grandes benefícios na velocidade.
 
 \section{Conclusões}
+Com este projeto foi concluido que paralelizar um programa é mais complicado que simplesmente criar um thread para tudo. Isto deve-se ao facto de que é necessário verificar se irá existir algum aumento de velocidade ou mesmo se haverá algum problema, nomeadamente "race conditions", a diferentes processos tentarem aceder a mesma posição de memória e o programa crashar ou mesmo porque pode ser necessário manter a ordem de execução do programa. 
 
 \section{Acknowledgments}
 \begin{itemize}
@@ -68,5 +70,8 @@ TODO FAZER O TESTE SE TIVER TEMPO
 \end{itemize}
 
 \section{Bibliografia}
+\begin{itemize}
+\item Stack Overflow
+\end{itemize}
 
 \end{document}
