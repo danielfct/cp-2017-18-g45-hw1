@@ -181,7 +181,7 @@ void print_timer()
 	long elapsed = calc_time_elapsed();
 	int r, b;
 	get_score(&r, &b);
-	printf("board size:%d\t num threads:%s\t time(ms):%lu\t red:%d\t blue:%d\n", board_size, threads, elapsed, r, b);
+	printf("%d %s %lu %d %d\n", board_size, threads, elapsed, r, b);
 }
 
 void free_board()
@@ -349,10 +349,9 @@ int make_move(char color)
 	move **m;
 	best_move.heuristic = 0;
 
-	//alocar o array de moves inicializar antes, ao mesmo tempo que o board?
 	m = malloc(board_size * sizeof(move));
 	for (int i = 0; i < board_size; i++)
-	{ // malloc vai ser executado em serie sempre
+	{ // malloc vai ser sempre executado em serie
 		m[i] = malloc(board_size * sizeof(move));
 	}
 
