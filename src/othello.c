@@ -1,7 +1,7 @@
 //
 //  othello.c
 //
-//  Created by Bernardo Ferreira and João Lourenço on 22/09/17.
+//  Created by Bernardo Ferreira and Joï¿½o Lourenï¿½o on 22/09/17.
 //  Copyright (c) 2017 DI-FCT-UNL. All rights reserved.
 //
 
@@ -190,7 +190,7 @@ void print_timer()
 	long elapsed = calc_time_elapsed();
 	int r, b;
 	get_score(&r, &b);
-	printf("%d %s %lu %d %d\n", board_size, threads, elapsed, r, b);
+	printf("%d\t%s\t%lu\t%d\t%d\n", board_size, threads, elapsed, r, b);
 }
 
 void free_board()
