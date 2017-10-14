@@ -48,7 +48,7 @@ identify	 when	 parallelizing	 the	 given	 code?	 	 How	 did	 you	 address/solve
 De modo a realizar verificar se o programa irá correr sem problemas foram realizados bastantes testes em diferentes máquinas utilizando flags e inputs diferentes, de modo a tentar testar todos os casos possíveis no qual o programa poderia ser executado.
 Isto para um programa implementado sequencialmente talvez seria o suficiente para garantir um elevado nível de confiança no programa. No entanto, visto que este é executado em paralelo não existe uma certeza da ordem de execução de cada um dos threads. Logo podem existir casos onde o um thread pode se atrasar relativamente a outro, devido a ruido existente durante a execução do código. Para poder testar estas ocasiões seria necessário utilizar um "noise injector" de modo a poder simular um ambiente mais real, visto que seria alterada a ordem de finalização de cada thread.
 
-Outra maneira de confirmar a integridade do código é verificando se não existe nenhum thread que aceda a mesma posição de memória que outro thread que possa possivelmente utilizar esses mesmos dados. 
+Outra maneira de confirmar a integridade do código é verificando se não existe nenhum thread que aceda a mesma posição de memória que outro thread que possa possivelmente utilizar esses mesmos dados, tendo cada um as suas próprias variáveis ou esperando que os threads acabem de executar e fazer as suas alterações, caso seja necessário utilizar esses dados posteriormente.
 
 \section{Avaliação}
 \includegraphics{bs50.JPG}
