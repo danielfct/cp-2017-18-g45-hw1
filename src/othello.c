@@ -16,7 +16,7 @@
 #include <cilk/cilk.h>
 
 #define RED "\x1B[31m"
-#define BLU "\x1B[34m"
+#define BLUE "\x1B[34m"
 #define RESET "\x1B[0m"
 #define TOPLEFT "\x1B[0;0H"
 #define CLEAR "\x1B[2J"
@@ -163,7 +163,7 @@ void print_board()
 				if (c == R)
 					printf("%s%c %s", RED, R, RESET);
 				else if (c == B)
-					printf("%s%c %s", BLU, B, RESET);
+					printf("%s%c %s", BLUE, B, RESET);
 				else
 					printf("%s%c %s", "", E, "");
 			}
@@ -467,7 +467,7 @@ int main(int argc, char *argv[])
 	// the game stops when no more moves can be done for both players
 	// red player has the first move
 	bool can_move_r = true, can_move_b = true;
-	for (char turn = R; can_move_r && can_move_b; turn = opponent(turn))
+	for (char turn = R; can_move_r || can_move_b; turn = opponent(turn))
 	{
 		print_board();
 		bool can_move = make_move(turn);
