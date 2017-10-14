@@ -1,7 +1,7 @@
 //
 //  othello.c
 //
-//  Created by Bernardo Ferreira and Jo√£o Louren√ßo on 22/09/17.
+//  Created by Bernardo Ferreira and Jo„o LourenÁo on 22/09/17.
 //  Copyright (c) 2017 DI-FCT-UNL. All rights reserved.
 //
 
@@ -56,6 +56,7 @@ int delay = 0;
 char *threads = "1";
 
 char **board;
+move **available_moves;
 
 struct timeval start_time, end_time;
 
@@ -65,13 +66,21 @@ void init_board()
 	for (int i = 0; i < board_size; i++)
 	{ // malloc vai ser executado em serie sempre
 		board[i] = malloc(board_size * sizeof(char));
-		for (int j = 0; j < board_size; j++) //como e apenas uma atribuicao nao vale a pena
-			board[i][j] = E;
+		memset(board[i], E, board_size);
 	}
 	board[board_size / 2 - 1][board_size / 2 - 1] = R;
 	board[board_size / 2][board_size / 2 - 1] = B;
 	board[board_size / 2 - 1][board_size / 2] = B;
 	board[board_size / 2][board_size / 2] = R;
+}
+
+void init_available_moves()
+{
+	available_moves = malloc(board_size * sizeof(move));
+	for (int i = 0; i < board_size; i++)
+	{ // malloc vai ser sempre executado em serie
+		available_moves[i] = malloc(board_size * sizeof(move));
+	}
 }
 
 void init_move(move *m, int i, int j, char color)
@@ -186,10 +195,16 @@ void print_timer()
 
 void free_board()
 {
-	int i;
-	for (i = 0; i < board_size; i++)
+	for (int i = 0; i < board_size; i++)
 		free(board[i]);
 	free(board);
+}
+
+void free_available_moves()
+{
+	for (int i = 0; i < board_size; i++)
+		free(available_moves[i]);
+	free(available_moves);
 }
 
 void finish_game()
@@ -204,6 +219,7 @@ void finish_game()
 	}
 
 	free_board();
+	free_available_moves();
 }
 
 void flip_direction(move *m, int inc_i, int inc_j)
@@ -322,8 +338,7 @@ void get_move(move *m)
 move getBestMoveInArray(move *m)
 {
 	move bestMove = m[0];
-	int i;
-	for (i = 1; i < board_size; i++)
+	for (int i = 1; i < board_size; i++)
 	{
 		if (m[i].heuristic > bestMove.heuristic)
 			bestMove = m[i];
@@ -346,27 +361,20 @@ move getBestMove(move **m)
 int make_move(char color)
 {
 	move best_move;
-	move **m;
 	best_move.heuristic = 0;
-
-	m = malloc(board_size * sizeof(move));
-	for (int i = 0; i < board_size; i++)
-	{ // malloc vai ser sempre executado em serie
-		m[i] = malloc(board_size * sizeof(move));
-	}
 
 	//obter todos os moves
 	cilk_for(int i = 0; i < board_size; i++)
 	{
 		for (int j = 0; j < board_size; j++)
 		{
-			init_move(&m[i][j], i, j, color);
-			get_move(&m[i][j]);
+			init_move(&available_moves[i][j], i, j, color);
+			get_move(&available_moves[i][j]);
 		}
 	}
 
 	//ver qual o melhor move
-	best_move = getBestMove(m);
+	best_move = getBestMove(available_moves);
 
 	if (best_move.heuristic > 0)
 	{
@@ -451,8 +459,9 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	// initialize game board by allocating memory for board pointer variable and setting initial colors
+	// initialize necessary arrays
 	init_board();
+	init_available_moves();
 
 	// main game loop which makes alternate moves between player red and player blue
 	// the game stops when no more moves can be done for both players
