@@ -12,15 +12,15 @@
 \title{Concorrência e Paralelismo \\
 \large Projecto 1}
 
-\author{Didier Dias N45777\and Daniel Pimenta N}
+\author{Didier Dias N45777\and Daniel Pimenta N45404}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
 O problema principal que foi resolvido foi a paralelização de um programa que simula um jogo de reversi, fornecido pelo professor. \\
-Para tal foi utilizada a tecnologia Cilk+ que nos permite facilmente criar threads em paralelo, podendo assim o computador utilizar vários cores para realizar o processamento do programa.\\
-Foi nos possível realizar esta paralelização o que, se o  tamanho do tabuleiro utilizado na simulação for de um tamanho relevante, diminui bastante o tempo de execução do programa.
+Para tal foi utilizada a técnologia Cilk+ que nos permite facilmente criar threads que executam código em paralelo, podendo assim o computador utilizar vários cores para realizar o processamento do programa.\\
+Foi nos possível realizar esta paralelização o que, se o tamanho do tabuleiro utilizado na simulação for relativamente elevado, diminui bastante o tempo de execução do programa.
 \end{abstract}
 
 \section{Introdução}
@@ -65,7 +65,7 @@ Podemos também verificar que os maiores ganhos ocorrem utilizando 12 cores, com
 O ganho de velocidade depende do tamanho do tabuleiro inicial sendo que quanto maior este for, mais eficiente será a paralelização. Isto pode ser explicado, como o ponto anterior, pela quantidade de carga que cada processador irá tratar. Outro fator que contribui para esse facto será que ao aumentar o tamanho do board, a parte paralelizada do programa irá crescer a uma velocidade superior superior ao troço de código iterativo ou seja, quanto maior o board, menos impacto terá a parte não paralelizada no tempo que o programa demora a executar, levando assim a mais ganhos.
 
 \section{Conclusões}
-Com este projeto foi concluído que paralelizar um programa é mais complicado que simplesmente criar um thread para tudo. Isto deve-se ao facto de que é necessário verificar se irá existir algum aumento de velocidade ou mesmo se haverá algum problema, nomeadamente "race conditions", a diferentes processos tentarem aceder à mesma posição de memória e o programa crashar ou mesmo porque pode ser necessário manter a ordem de execução do programa. 
+Com este projeto foi concluido que paralelizar um programa é mais complicado que simplesmente criar um thread para tudo. Isto deve-se ao facto de ser necessário verificar se irá existir algum aumento de velocidade ou mesmo se haverá algum problema, nomeadamente "race conditions", a diferentes processos tentarem aceder à mesma posição de memória e o programa terminar, ou mesmo porque pode ser necessário manter a ordem de execução do programa. 
 
 \section{Acknowledgments}
 \begin{itemize}
